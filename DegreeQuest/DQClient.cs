@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
@@ -18,15 +19,30 @@ namespace DegreeQuest
     {
         TcpClient c = new TcpClient();
         DegreeQuest dq;
+        public volatile Boolean _halt = false;
+        int comSize;
+        int spectatorPort;
 
-        public DQClient(DegreeQuest mainDQ)
+        public DQClient(DegreeQuest mainDQ, Config conf)
         {
             dq = mainDQ;
+            comSize = conf.getComSize();
+            spectatorPort = Convert.ToInt32(conf.get("spectatorPort"));
         }
 
         public void ThreadRun()
         {
-            c.Connect("127.0.0.1", 13337);
+
+            try
+            {
+                c.Connect("127.0.0.1", spectatorPort);
+            } catch(SocketException e)
+            {
+                Console.WriteLine("> Cannot connect to server on port :13337...ending Client...");
+                _halt = true;
+                return;
+            }
+
             Console.WriteLine(">>> Client Connected!");
             NetworkStream serverStream = c.GetStream();
 
@@ -35,52 +51,83 @@ namespace DegreeQuest
                 Console.WriteLine("CLIENT IS NULL!");
             }
 
-            //Int32 size = c.ReceiveBufferSize;
-            //Type[] knownTypes = new Type[] {typeof(Vector2), typeof(Actor), typeof(AType), typeof(List<PC>) };
-            //DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(List<PC>), knownTypes);
-            //var ser = new JavaScriptSerializer();
-
-            while (true)
+            while (!_halt)
             {
-                //Console.WriteLine(">>> Reading Room!");
+                Byte[] byt2 = new Byte[comSize];
 
-                //right now only runs this once
-                //dq.room.members = (List<PC>)ser.ReadObject(serverStream);
-                Byte[] byt2 = new Byte[10000];
-                serverStream.Read(byt2, 0, 10000);
-                string json = Util.bts(byt2);
-                //List<string> vl = ser.Deserialize<List<string>>(json);
-                string[] locations = json.Split('@');
+                try
+                {
+                    serverStream.Read(byt2, 0, comSize);
+                } catch(System.IO.IOException e)
+                {
+                    Console.WriteLine(">>> Client failed to write to the server on port :13337...Client ending...");
+                    _halt = true;
+                    break;
+                }
 
-                //populate rooms
-                //List<Vector2> vl = new List<Vector2>();
+                
+                string str = Util.bts(byt2);
+                string[] locations = str.Split('@');
 
                 //this is bad and unsafe and can cause crashes
-                lock (dq.room) {
+                lock (dq.dungeon.currentRoom) {
 
-                    /** this entire block should be replaced with a server-side ID that re-writes the members array once at start and then just uses server id's to write to the members array **/
-                    //dq.room.members = new List<Actor
-                    dq.room.num = locations.Length - 1;
+                    string[] sub = locations[0].Split('#');
 
-                  
+                    //Console.WriteLine("name: " + sub[2] + "," + sub[3]);
+                    if (Convert.ToInt32(sub[2]) != dq.dungeon.index_x || Convert.ToInt32(sub[3]) != dq.dungeon.index_y)
+                    {
+                        dq.dungeon.switchRooms(Convert.ToInt32(sub[2]), Convert.ToInt32(sub[3]));
+                        string[] pos = locations[1].Split('#');
+                        dq.pc.Position = new Location(pos[0]);
+                        //Console.WriteLine("ConvName: " + dq.dungeon.index_x + "," + dq.dungeon.index_y);
+                        //Console.WriteLine("PC: " + dq.pc.Position.ToString());
+                    }
+                    
+
+                    dq.dungeon.currentRoom.num = int.Parse(sub[0]);
+                    dq.dungeon.currentRoom.num_item = int.Parse(sub[1]);
+
+                    //Console.WriteLine("item_count: " + dq.rooms["secondary"].num_item);
                     //need to expand
                     int j;
-                    for(j = 0; j < dq.room.num; j++)
+                    for(j = 0; j < dq.dungeon.currentRoom.num && j < dq.dungeon.currentRoom.members.Length; j++)
                     {
                         PC tc = new PC();
-                        dq.LoadPC(tc);
-                        dq.room.members[j] = tc;
+                        dq.LoadPC(tc, tc.GetTexture());
+                        dq.dungeon.currentRoom.members[j] = tc;
                     }
 
                     int i;
-                    for (i = 0; i < dq.room.num; i++)
+                    for (i = 0; i < dq.dungeon.currentRoom.num && i < dq.dungeon.currentRoom.members.Length; i++)
                     {
-                        dq.room.members[i].Position = new Location(locations[i]).toVector2();
+                        sub = locations[i+1].Split('#');
+                        //Console.WriteLine(">>>SUB STRING: " + sub[0] + " then " + sub[1]);
+
+                        dq.dungeon.currentRoom.members[i].Position = new Location(sub[0]);
+                        dq.dungeon.currentRoom.members[i].SetTexture(sub[1]);
+                    }
+                    for (i = 0; i< dq.dungeon.currentRoom.num_item && i < dq.dungeon.currentRoom.items.Length; i++) //issue is that the second rooms items gets the values of the first room
+                    {
+                        //2#2#2@pos#tex@pos2#tex2@ipos#itex@ipos2#itex2@
+                        dq.dungeon.currentRoom.items[i] = new Item();
+                        sub = locations[i+dq.dungeon.currentRoom.num+1].Split('#');
+                        //Console.WriteLine(">>>SUB STRING: " + sub[0] + " then " + sub[1]);
+
+                        dq.dungeon.currentRoom.members[i].SetTexture(sub[1]);
+                        dq.dungeon.currentRoom.items[i].Position = new Location(sub[0]);
+                    
                     }
                 }
 
                 Thread.Sleep(5);
             }
+            _halt = true;
+        }
+
+        public void Halt()
+        {
+            _halt = true;
         }
     }
 
@@ -91,16 +138,28 @@ namespace DegreeQuest
         Vector2 pos;
         PC pc;
         DegreeQuest dq;
+        public volatile Boolean _halt = false;
+        int postPort;
 
-        public DQPostClient(PC mainPC, DegreeQuest mainDQ)
+        public DQPostClient(PC mainPC, DegreeQuest mainDQ, Config conf)
         {
             pc = mainPC;
             dq = mainDQ;
+            postPort = Convert.ToInt32(conf.get("postPort"));
         }
 
         public void ThreadRun()
         {
-            c.Connect("127.0.0.1", 13338);
+            try
+            {
+                c.Connect(dq.conf.get("srvAddr"), postPort);
+            } catch(SocketException e)
+            {
+                Console.WriteLine("> Cannot connect to server on port :13337...ending POST Client...");
+                _halt = true;
+                return;
+            }
+            
             Console.WriteLine(">>> POST Client Connected!");
             NetworkStream srvStream = c.GetStream();
 
@@ -109,55 +168,39 @@ namespace DegreeQuest
                 Console.WriteLine("POST CLIENT IS NULL!");
             }
 
+            //var js = new JavaScriptSerializer();
+            BinaryFormatter bin = new BinaryFormatter();
 
-            //initial position
-            Byte[] byt = Util.stb("OPEN " + pc.Name);
-            srvStream.Write(byt, 0, byt.Length);
-            srvStream.Flush();
-
-            byte[] initB = new byte[100];
-            srvStream.Read(initB, 0, 100);
-            pos = new Location(Util.bts(initB)).toVector2();
-
-            pc.Position = pos;
-
-            Console.WriteLine(">>> POST Client Entering Primary Loop!");
-
-            while (true)
+            while (!_halt)
             {
-                byte[] inStream = new byte[100];
-                Byte[] byt2;
-
-                //the problem is last action
-                string la = "nil";
-
-                if (dq.actions.ToArray().Length > 0)
+                try
                 {
-                    la = (string)dq.actions.Dequeue();
+                    bin.Serialize(srvStream, pc);
+                } catch(Exception e)
+                {
+                    Console.WriteLine(">>> Failed to serialize to server...ending POST Client...");
+                    return;
                 }
 
-                //Console.WriteLine(">>> Processing action: " + la);
+                srvStream.Flush();
 
-                if (la.Contains("MOVE"))
-                {
-                    byt2 = Util.stb(la);
-                    srvStream.Write(byt2, 0, byt2.Length);
-                    srvStream.Flush();
-                    //srvStream.Read(inStream, 0, 100);
-                    //pos = new Location(DegreeQuest.bts(inStream)).toVector2();
-                }
-                else
-                {
-                    byt2 = Util.stb(la);
-                    srvStream.Write(byt2, 0, byt2.Length);
-                    srvStream.Flush();
-                }
+                /* submit to server and read back ;; update relevant fields */
+
+                //disabled due to performance issues
+                //PC tc = (PC)bin.Deserialize(srvStream);
+                //pc.Position = tc.Position;
+                //pc.Texture = tc.Texture;
 
                 //wrap up
 
-                //pc.Position = pos;
                 Thread.Sleep(5);
             }
+            _halt = true;
+        }
+
+        public void Halt()
+        {
+            _halt = true;
         }
     }
 }

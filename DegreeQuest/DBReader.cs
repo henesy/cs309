@@ -51,7 +51,45 @@ namespace DegreeQuest
                 MySqlCommand cmd = new MySqlCommand(sSQL, conn);
                 cmd.ExecuteNonQuery();
             }
-            catch(MySqlException ex)
+            catch (MySqlException ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            conn.Close();
+        }
+
+        /// <summary>
+        /// this function takes in the table name the colmn names, type, and defaults and creates the table in the database.
+        /// destroys previous table if it exists.
+        /// completely unchecked.
+        /// </summary>
+        /// <param name="tableName">the name of the table in MySQL</param>
+        /// <param name="columnNames">the name of the colomns that contains the primary key</param>
+        /// <param name="types">the type for each column</param>
+        /// <param name="defaults">the default value for each column</param>
+        public static void createTable(String tableName, String[] colmnNames, String[] types, String[] defaults)
+        {
+            try
+            {
+                conn.Open();
+                String sSQL = "drop table if exists " + tableName;
+                MySqlCommand cmd = new MySqlCommand(sSQL, conn);
+                cmd.ExecuteNonQuery();
+
+                sSQL = "CREATE TABLE " + tableName + '(';
+                sSQL = sSQL + "id INT UNSIGNED NOT NULL AUTO_INCREMENT,";
+                for (int i = 0; i < colmnNames.Length; i++)
+                {
+                    sSQL = sSQL  + colmnNames[i] + " " + types[i] + " NOT NULL";
+                    if(!(defaults[i] == null))
+                        sSQL = sSQL + " DEFAULT '" + defaults[i];
+                    sSQL = sSQL + "' ,";
+                }
+                sSQL = sSQL + " PRIMARY KEY (id));";
+                cmd = new MySqlCommand(sSQL, conn);
+                cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
             {
                 Console.WriteLine(ex.ToString());
             }
@@ -158,7 +196,7 @@ namespace DegreeQuest
                 }
                 query = query + " WHERE " + colmnConditionID + "=" + condition;
                 MySqlCommand cmd = new MySqlCommand(query, conn);
-                readed = interpetReader(cmd.ExecuteReader());
+                readed = interpretReader(cmd.ExecuteReader());
             }
             catch(MySqlException e)
             {
@@ -170,11 +208,62 @@ namespace DegreeQuest
             }
             return readed; 
         }
+
+
+        public static String[] random(String tableName)
+        {
+            String[] readed = null;
+            try
+            {
+                conn.Open();
+                String query = "SELECT COUNT(*) FROM " + tableName;
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                int num = new Random().Next(1,Convert.ToInt32(cmd.ExecuteScalar())+1);
+                query = "SELECT * FROM " + tableName + " WHERE id = '"+num.ToString()+"'";
+                cmd = new MySqlCommand(query, conn);
+                readed = readRow(cmd.ExecuteReader());
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            finally
+            {
+                conn.Close();
+            }
+            return readed;
+        }
+
+        private static String[] readRow(MySqlDataReader row)
+        {
+            int n = row.FieldCount;
+            String[] values = new String[n];
+
+            try
+            {
+                row.Read();
+                for(int i=0;i<n;i++)
+                {
+                    values[i] = row.GetString(i);
+                }
+
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            finally
+            {
+                row.Close();
+            }
+            return values;
+        }
+
         /*
          *Helper method that takes a MySqlDataReader object and returns a string that 
          * is what is in the reader object 
          */
-        private static String interpetReader(MySqlDataReader reader)
+        private static String interpretReader(MySqlDataReader reader)
         {
             String values = "";
             try

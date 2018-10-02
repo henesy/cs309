@@ -11,6 +11,7 @@ using System.Web.Script.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace DegreeQuest
 {
@@ -18,25 +19,40 @@ namespace DegreeQuest
     {
         ClientList clients;
         DegreeQuest dq;
+        public volatile Boolean _halt = false;
+        TcpListener srv;
+        int spectatorPort;
 
-        public DQServer(DegreeQuest mainDQ)
+        public DQServer(DegreeQuest mainDQ, Config conf)
         {
             dq = mainDQ;
+            spectatorPort = Convert.ToInt32(conf.get("spectatorPort"));
         }
 
         public void DQSInit()
         {
-            TcpListener srv = new TcpListener(13337);
+            srv = new TcpListener(spectatorPort);
             clients = new ClientList();
 
             srv.Start();
-            Console.WriteLine(">>> Server Started");
+            Console.WriteLine(">>> Server started");
 
-            while (true)
+            while (!_halt)
             {
-                TcpClient client = srv.AcceptTcpClient();
+                TcpClient client;
+                try
+                {
+                    client = srv.AcceptTcpClient();
+                } catch(SocketException e)
+                {
+                    Console.WriteLine(">>> Server got Socket Exception on Accept...probably Halt message...Server ending...");
+                    _halt = true;
+                    return;
+                }
+
+
                 clients.Add(client);
-                Handler h = new Handler(client, dq);
+                Handler h = new Handler(client, dq, _halt);
 
                 //handle concurrently 
                 Thread handler = new Thread(new ThreadStart(h.ThreadRun));
@@ -56,6 +72,7 @@ namespace DegreeQuest
                 }
             }
 
+            _halt = true;
             Console.WriteLine(">>> DQSInit Ending!");
         }
 
@@ -76,6 +93,12 @@ namespace DegreeQuest
             }
         }
 
+        public void Halt()
+        {
+            _halt = true;
+            srv.Stop();
+        }
+
     }
 
 
@@ -83,50 +106,63 @@ namespace DegreeQuest
     {
         TcpClient c;
         DegreeQuest dq;
+        public volatile Boolean _halt2 = false;
 
         //threading and locks on clients variable 
-        public Handler(TcpClient client, DegreeQuest mainDQ)
+        public Handler(TcpClient client, DegreeQuest mainDQ, Boolean _halt)
         {
             c = client;
             dq = mainDQ;
+            _halt2 = _halt;
         }
 
         public void ThreadRun()
         {
             Console.WriteLine(">>> Handler Thread Started!");
-            //Type[] knownTypes = new Type[] {typeof(Vector2), typeof(Actor), typeof(AType), typeof(List<PC>)};
-            //DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(List<PC>), knownTypes);
 
-
-            //var ser = new JavaScriptSerializer();
-
-
-            while (true)
+            while (!_halt2)
             {
-                string str = "";
+                //dq.dungeon.checkRoomSwitch();
+                string str = dq.dungeon.currentRoom.num.ToString()+"#"+dq.dungeon.currentRoom.num_item.ToString()+ "#" + dq.dungeon.index_x + "#" + dq.dungeon.index_y + "@";
 
                 int i;
-                for (i = 0; i < dq.room.num; i++)
+                for (i = 0; i < dq.dungeon.currentRoom.num; i++)
                 {
-                    str += ((new Location(dq.room.members[i].Position)).ToString()) + "@";
+                    str += dq.dungeon.currentRoom.members[i].Position.ToString() + "#" + dq.dungeon.currentRoom.members[i].GetTexture() + "@";
+                    Console.Write("PC: " + i + "; pos: " + dq.dungeon.currentRoom.members[i].Position.ToString());
                 }
+                for (i = 0; i < dq.dungeon.currentRoom.num_item; i++)
+                {
+                    str += dq.dungeon.currentRoom.items[i].Position.ToString() + "#" + dq.dungeon.currentRoom.items[i].GetTexture() + "@";
+                }
+                //2#2#2@pos#tex@pos2#tex2@ipos#itex@ipos2#itex2@
+                Console.WriteLine(">>> STR IS: " + str);
 
                 NetworkStream networkStream = c.GetStream();
-                //needs to be PC position
-
-                Console.WriteLine(">>> Writing Room!");
-
-                //ser.WriteObject(networkStream, dq.room.members);
-                //string json = ser.Serialize(vl);
+ 
                 Byte[] byt2 = Util.stb(str);
-                networkStream.Write(byt2, 0, byt2.Length);
 
-                networkStream.Flush();
+                try
+                {
+                    networkStream.Write(byt2, 0, byt2.Length);
+
+                    networkStream.Flush();
+                } catch(Exception e)
+                {
+                    Console.WriteLine(">>> Exception on write, client disconnected...ending Handler...");
+                    break;
+                }
 
                 Thread.Sleep(5);
             }
 
             Console.WriteLine(">>> Handler Ending! ");
+        }
+
+        public void Halt()
+        {
+            _halt2 = true;
+            c.Close();
         }
     }
 
@@ -185,28 +221,46 @@ namespace DegreeQuest
     {
         ClientList clients;
         DegreeQuest srvDQ;
+        public volatile Boolean _halt = false;
+        TcpListener srv;
+        int comSize;
+        int postPort;
 
-        public DQPostSrv(DegreeQuest hostDQ)
+        public DQPostSrv(DegreeQuest hostDQ, Config conf)
         {
             srvDQ = hostDQ;
+            comSize = conf.getComSize();
+            postPort = Convert.ToInt32(conf.get("postPort"));
         }
 
         public void PostInit()
         {
-            TcpListener srv = new TcpListener(13338);
+            srv = new TcpListener(postPort);
             clients = new ClientList();
 
             srv.Start();
             Console.WriteLine(">>> POST Server Started");
 
-            while (true)
+            while (!_halt)
             {
-                TcpClient client = srv.AcceptTcpClient();
+                TcpClient client;
+                try
+                {
+                    client = srv.AcceptTcpClient();
+                }
+                catch (SocketException e)
+                {
+                    Console.WriteLine(">>> POST Server got Socket Exception on Accept...probably Halt message...POST Server ending...");
+                    _halt = true;
+                    return;
+                }
+
                 clients.Add(client);
-                PostHandler h = new PostHandler(client, srvDQ);
+                PostHandler h = new PostHandler(client, srvDQ, _halt, comSize);
 
                 //handle concurrently 
                 Thread handler = new Thread(new ThreadStart(h.ThreadRun));
+
 
                 try
                 {
@@ -223,6 +277,7 @@ namespace DegreeQuest
                 }
             }
 
+            _halt = true;
             Console.WriteLine(">>> DQSInit Ending!");
         }
 
@@ -230,107 +285,123 @@ namespace DegreeQuest
         {
             this.PostInit();
         }
-    }
 
-    /* Manages communications with a client on port :13338 for movement/deltas and changes and such */
-    class PostHandler
-    {
-        TcpClient c;
-        PC cc; //client character
-        DegreeQuest srvDQ;
-        //Int32 id;
-
-        public PostHandler(TcpClient client, DegreeQuest hostDQ)
+        public void Halt()
         {
-            c = client;
-            cc = null;
-            srvDQ = hostDQ;
+            _halt = true;
+            srv.Stop();
         }
 
-        public void ThreadRun()
+        /* Manages communications with a client on port :13338 for movement/deltas and changes and such */
+        class PostHandler
         {
-            Console.WriteLine(">>> POST Handler Thread Started!");
-            cc = new PC();
+            TcpClient c;
+            PC cc; //client character
+            DegreeQuest srvDQ;
+            public volatile Boolean _halt2 = false;
+            int comSize;
 
-            NetworkStream cStream = c.GetStream();
-            byte[] inStream = new byte[100];
-
-            cStream.Read(inStream, 0, 100);
-            string nameMsg = Util.bts(inStream);
-            cc.Name = nameMsg.Substring(5);
-
-            //establish locations/init client "player" object
-            srvDQ.room.Add(cc);
-
-            srvDQ.LoadPC(cc);
-
-            //Byte[] byt = DegreeQuest.stb(new Location(cc.Position).ToString());
-            Byte[] byt = Util.stb(new Location(cc.Position).ToString());
-            cStream.Write(byt, 0, byt.Length);
-            cStream.Flush();
-            Console.WriteLine(">>> POST Handler Entering Primary Loop!");
-
-            while (true)
+            public PostHandler(TcpClient client, DegreeQuest hostDQ, Boolean _halt, int comSiz)
             {
-                try
-                {
-
-                    //do things here
-                    //katie was here
-                    inStream = new byte[100];
-                    cStream.Read(inStream, 0, 100);
-                    string usrin = Util.bts(inStream);
-                    Console.WriteLine("Got usrin: " + usrin + "\n");
-
-                    if (usrin.Contains("MOVE"))
-                    {
-                        //cc.Position = new Location(usrin.Substring(5)).toVector2();
-                        //checks would occur here to see if there is a valid move
-
-                        //Byte[] byt2 = DegreeQuest.stb((new Location(((PC)srvDQ.room.members.ToArray()[id]).Position)).ToString());
-                        //cStream.Write(byt2, 0, byt2.Length);
-
-                        string[] order = usrin.Split(' ');
-                        float playerMoveSpeed = float.Parse(order[1]);
-                        cc.MoveSpeed = playerMoveSpeed;
-                        int i;
-                        for (i = 2; i < order.Length; i++)
-                        {
-                            //movement logistics from DegreeQuest
-                            if (order[i].Contains("N"))
-                            {
-                                cc.Position.Y -= playerMoveSpeed;
-                            }
-                            if (order[i].Contains("E"))
-                            {
-                                cc.Position.X += playerMoveSpeed;
-                            }
-                            if (order[i].Contains("S"))
-                            {
-                                cc.Position.Y += playerMoveSpeed;
-                            }
-                            if (order[i].Contains("W"))
-                            {
-                                cc.Position.X -= playerMoveSpeed;
-                            }
-
-
-                        }
-                    }
-
-
-                    cStream.Flush();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.ToString());
-                    break;
-                }
-
-                Thread.Sleep(5);
+                c = client;
+                cc = null;
+                srvDQ = hostDQ;
+                _halt2 = _halt;
+                comSize = comSiz;
             }
 
-            Console.WriteLine(">>> POST Handler Ending! ");
+            public void ThreadRun()
+            {
+                Console.WriteLine(">>> POST Handler Thread Started!");
+                cc = new PC();
+
+
+
+                NetworkStream cStream = c.GetStream();
+                byte[] inStream = new byte[comSize];
+
+                //establish locations/init client "player" object
+                srvDQ.dungeon.currentRoom.Add(cc);
+
+                srvDQ.LoadPC(cc, cc.GetTexture());
+
+
+
+                Console.WriteLine(">>> POST Handler Entering Primary Loop!");
+
+                var js = new JavaScriptSerializer();
+                BinaryFormatter bin = new BinaryFormatter();
+
+                Microsoft.Xna.Framework.Input.Keys[] lastkb = cc.kbState;
+                Location lastm = cc.mLoc;
+
+                while (!_halt2)
+                {
+                    try
+                    {
+
+                        //do things here
+                        //katie was here
+                        PC tc = (PC)bin.Deserialize(cStream);
+                        cc.Position = tc.Position;
+                        cc.SetTexture( tc.GetTexture());
+                        //cc = tc;
+
+                        /* read from client and then do processing things, probably with tc.LastAction */
+                        //Console.WriteLine("KB State: " + tc.kbState.ToString());
+
+                        
+                        if (tc.kbState != null)
+                        {
+                            //Console.WriteLine("KB State: " + tc.kbState.ToString());
+
+                            foreach (var k in tc.kbState)
+                            {
+                                if(k == Microsoft.Xna.Framework.Input.Keys.F10 && !lastkb.Contains(Microsoft.Xna.Framework.Input.Keys.F10))
+                                {
+                                    //shoot command
+                                    Projectile proj = new Projectile(cc, new Location(tc.mLoc.X, tc.mLoc.Y), 2, PType.Dot, new Location(tc.Position.X, tc.Position.Y));
+                                    proj.Initialize("dot", cc.Position.toVector2());
+                                    srvDQ.dungeon.currentRoom.Add(proj);
+                                }
+                            }
+                        }
+
+                        lastkb = tc.kbState;
+
+                        if(tc.mLoc != null)
+                        {
+                            //mouse things
+                            //Console.WriteLine("Mouse State: " + tc.mLoc.ToString());
+
+                        }
+
+                        lastm = tc.mLoc;
+
+                        
+
+                        /* write the (potentially modified) temporary character back to the client */
+
+                        // disabled due to temporary performance issues
+                        //bin.Serialize(cStream, tc);
+
+                        cStream.Flush();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.ToString());
+                        break;
+                    }
+
+                    Thread.Sleep(5);
+                }
+
+                srvDQ.dungeon.currentRoom.Delete(cc);
+
+                Console.WriteLine(">>> POST Handler Ending! ");
+            }
+
         }
+        //danger?
     }
 }

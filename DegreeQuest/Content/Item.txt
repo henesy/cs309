@@ -1,0 +1,383 @@
+﻿Version 1.0.0
+
+FOLLOW THE GIVEN EXAMPLE(S) TO THE DOT. NO CHECKING IS DONE ON FORMAT. ITS ON YOU.
+NAME must come FIRST.
+EVERYTHING must be IN ORDER.
+BLANK Values must still have their line, and will default to default values.
+End with a BLANK LINE
+Possible types: Head, Feet, Hands, Torso, OneHand, TwoHand, OffHand, UseTemp, UsePerm, NONE
+
+
+Name: Baseball Hat
+Type: Head
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Headband
+Type: Head
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Mecha Helmet
+Type: Head
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Warm Hat
+Type: Head
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Formal Suit
+Type: Torso
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Mecha Suit
+Type: Torso
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Overalls
+Type: Torso
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Bolt Gloves
+Type: Hands
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Gloves
+Type: Hands
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Iron Gloves
+Type: Hands
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Mecha Gloves
+Type: Hands
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Formal Shoes
+Type: Feet
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Mecha Shoes
+Type: Feet
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Sandals
+Type: Feet
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Spiked Shoes
+Type: Feet
+Atk: 0
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Blaster
+Type: OneHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 1
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Mace
+Type: OneHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Short Sword
+Type: OneHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Wand
+Type: OneHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 1
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Cannon
+Type: TwoHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 1
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Claws
+Type: TwoHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Crossbow
+Type: TwoHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 1
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Long Sword
+Type: TwoHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Maul
+Type: TwoHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Spear
+Type: TwoHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 0
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+Name: Staff
+Type: TwoHand
+Atk: 1
+Def: 0
+Spd: 0
+HP: 0
+EP: 0
+Value: 1
+Rarity: 1
+Logic: 0
+Life: 0
+Chem: 0
+Tech: 0
+
+
+
+
+
+
+
+THESE LINES MUST EXIST
+DO NOT DELETE
+ENDOFFILE

@@ -1,0 +1,91 @@
+Version 1.0.0
+
+Format EXACTLY as initial example directly below.
+That is, "fieldname": "fieldvalue" for EVERY field, in EXACT ORDER. 
+End with EMPTY line.
+As of 3/21/17 format is not checked, its assumed correctness.
+
+Name: Boar
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 2
+subjects: BIO
+
+Name: Boomer
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 1
+subjects: TECH
+
+Name: Flame
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 1
+subjects: CHEM
+
+Name: Ghost
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 2
+subjects: MATH
+
+Name: Sentry
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 2
+subjects: TECH
+
+Name: Slime
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 2
+subjects: CHEM
+
+Name: Stump
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 1
+subjects: BIO
+
+Name: Yeti Jr
+HP: 10
+EP: 0
+atk: 1
+def: 1
+spd: 1
+lvl: 1
+subjects: MATH
+
+
+
+
+
+
+
+
+
+
+
+DO NOT REMOVE THESE LINES
+END OF FILE
